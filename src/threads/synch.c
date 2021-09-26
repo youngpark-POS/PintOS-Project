@@ -179,6 +179,7 @@ lock_init (struct lock *lock)
 
   lock->holder = NULL;
   sema_init (&lock->semaphore, 1);
+  lock->donated = false;
 }
 
 /* Acquires LOCK, sleeping until it becomes available if
@@ -196,8 +197,21 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  sema_down (&lock->semaphore);
-  lock->holder = thread_current ();
+  if (lock->holder != NULL)
+  {
+    /* donate priority if necessary. */
+    if (lock->holder->priority < thread_current ()->priority && !lock->donated)
+    {
+      lock->holder->priority = thread_current ()->priority;
+      list_push_back(&lock->holder->giver, &thread_current ()->elem);
+      lock->donated = true;
+    }
+  }
+  else
+  {
+    sema_down (&lock->semaphore);
+    lock->holder = thread_current ();
+  }
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -228,11 +242,25 @@ lock_try_acquire (struct lock *lock)
 void
 lock_release (struct lock *lock) 
 {
+  struct thread* max_thread;
+
   ASSERT (lock != NULL);
   ASSERT (lock_held_by_current_thread (lock));
 
   lock->holder = NULL;
+  lock->donated = false;
   sema_up (&lock->semaphore);
+
+  /* return donated priority. */
+  if (!list_empty(&thread_current ()->giver))
+  {
+    max_thread = list_entry(list_pop_front(&thread_current ()->giver), struct thread, elem);
+    list_remove(&thread_current ()->giver, max_thread);
+    if (!list_empty(&thread_current ()->giver))
+      thread_set_priority(list_entry(list_head(&thread_current ()->giver), struct thread, elem));
+    else
+      thread_set_priority(thread_current ()->init_priority);
+  }
 }
 
 /* Returns true if the current thread holds LOCK, false
