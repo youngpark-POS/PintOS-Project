@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -177,6 +178,8 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
   ASSERT (function != NULL);
+  printf("Thread creation\n");
+  
 
   /* Allocate thread. */
   t = palloc_get_page (PAL_ZERO);
@@ -598,8 +601,9 @@ allocate_tid (void)
 uint32_t thread_stack_ofs = offsetof (struct thread, stack);
 
 bool 
-thread_compare_priority(const struct thread *a, const struct thread* b, void *aux UNUSED)
+thread_compare_priority(const struct list_elem *a, const struct list_elem* b, void *aux UNUSED)
 {
-  int priority_a = a->priority, priority_b = b->priority;
+  int priority_a = list_entry (a, struct thread, elem)->priority;
+  int priority_b = list_entry (b, struct thread, elem)->priority;
   return priority_a < priority_b;
 }
