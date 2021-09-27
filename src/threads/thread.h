@@ -135,7 +135,7 @@ void thread_exit (void) NO_RETURN;
 void thread_yield (void);
 
 /* Priority compare function, return a->priority < b->priority. */
-bool thread_compare_priority(const struct thread *a, const struct thread *b, void *aux);
+bool thread_compare_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);

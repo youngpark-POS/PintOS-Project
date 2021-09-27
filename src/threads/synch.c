@@ -251,7 +251,7 @@ lock_release (struct lock *lock)
   if (!list_empty(&thread_current ()->giver))
   {
     max_thread = list_entry (list_pop_front(&thread_current ()->giver), struct thread, elem);
-    list_remove(&thread_current ()->giver, max_thread);
+    list_remove(max_thread);
 
     /* adjust priority. */
     if (!list_empty (&thread_current ()->giver))

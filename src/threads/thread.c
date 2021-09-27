@@ -11,7 +11,6 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
-#include "lib/stdio.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -69,7 +68,7 @@ static void idle (void *aux UNUSED);
 static struct thread *running_thread (void);
 static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority);
-static bool is_thread (struct thread *); // UNUSED;
+static bool is_thread (struct thread *) UNUSED;
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -178,7 +177,7 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
   ASSERT (function != NULL);
-  printf("Thread created\n");
+  debug_
   
 
   /* Allocate thread. */
@@ -318,6 +317,7 @@ thread_yield (void)
   enum intr_level old_level;
   
   ASSERT (!intr_context ());
+  debug_backtrace();
 
   old_level = intr_disable ();
   if (cur != idle_thread) 
