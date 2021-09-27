@@ -177,7 +177,6 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
   ASSERT (function != NULL);
-  debug_
   
 
   /* Allocate thread. */
