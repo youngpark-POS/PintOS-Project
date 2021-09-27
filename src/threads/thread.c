@@ -11,6 +11,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "lib/stdio.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -68,7 +69,7 @@ static void idle (void *aux UNUSED);
 static struct thread *running_thread (void);
 static struct thread *next_thread_to_run (void);
 static void init_thread (struct thread *, const char *name, int priority);
-static bool is_thread (struct thread *) UNUSED;
+static bool is_thread (struct thread *); // UNUSED;
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
@@ -177,6 +178,8 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
   ASSERT (function != NULL);
+  printf("Thread created\n");
+  
 
   /* Allocate thread. */
   t = palloc_get_page (PAL_ZERO);
@@ -207,6 +210,7 @@ thread_create (const char *name, int priority,
 
   /* if a new thread has the highest priority, yields. */
   if (thread_current ()->priority < t->priority)
+
     thread_yield();
 
   return tid;
@@ -344,6 +348,7 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+  printf("thread_set_priority() entered\n");
   thread_current ()->priority = new_priority;
   if (thread_current ()->priority < next_thread_to_run ()->priority)
     thread_yield();
