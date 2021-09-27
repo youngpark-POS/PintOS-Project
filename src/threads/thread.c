@@ -178,7 +178,6 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
   ASSERT (function != NULL);
-  printf("Thread creation\n");
   
 
   /* Allocate thread. */
