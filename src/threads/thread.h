@@ -24,6 +24,9 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -91,6 +94,7 @@ struct thread
     int priority;                       /* Priority. */
     int init_priority;                  /* Initial priority. */
     struct list giver;                  /* List of priority donator. */
+    struct list_elem giver_elem;        /* Iterator for giver list. */
     struct lock *waiting_lock;          /* Wait on lock. */
 
     int nice;                           /* Niceness. */
@@ -134,8 +138,8 @@ const char *thread_name (void);
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
 
-/* Priority compare function, return a->priority < b->priority. */
-bool thread_compare_priority(const struct list_elem *a, const struct list_elem *b, void *aux);
+/* Priority compare function, return a->priority > b->priority. */
+bool thread_compare_priority (const struct list_elem *a, const struct list_elem *b, void *aux);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);

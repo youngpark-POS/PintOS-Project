@@ -178,7 +178,6 @@ thread_create (const char *name, int priority,
   tid_t tid;
 
   ASSERT (function != NULL);
-  
 
   /* Allocate thread. */
   t = palloc_get_page (PAL_ZERO);
@@ -208,7 +207,7 @@ thread_create (const char *name, int priority,
   thread_unblock (t);
 
   /* if a new thread has the highest priority, yields. */
-  if (thread_current ()->priority < t->priority)
+  if (!list_empty (&ready_list) && thread_current ()->priority < t->priority)
     thread_yield();
 
   return tid;
@@ -346,9 +345,18 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
-  if (thread_current ()->priority < next_thread_to_run ()->priority)
-    thread_yield();
+
+  thread_current ()->init_priority = new_priority;
+
+  if (!list_empty (&thread_current ()->giver))
+    thread_current ()->priority = MAX(
+      new_priority, list_entry (list_front (&thread_current ()->giver), struct thread, giver_elem)->priority);
+  else
+    thread_current ()->priority = new_priority;
+  
+  if (!list_empty (&ready_list) && thread_current ()->priority < list_entry (list_front (&ready_list), struct thread, elem)->priority)
+    thread_yield ();
+  
 }
 
 /* Returns the current thread's priority. */
@@ -509,7 +517,10 @@ next_thread_to_run (void)
   if (list_empty (&ready_list))
     return idle_thread;
   else
+  {
+    list_sort(&ready_list, thread_compare_priority, NULL);
     return list_entry (list_pop_front (&ready_list), struct thread, elem);
+  }
 }
 
 /* Completes a thread switch by activating the new thread's page
@@ -604,5 +615,5 @@ thread_compare_priority(const struct list_elem *a, const struct list_elem* b, vo
 {
   int priority_a = list_entry (a, struct thread, elem)->priority;
   int priority_b = list_entry (b, struct thread, elem)->priority;
-  return priority_a < priority_b;
+  return priority_a > priority_b;
 }
