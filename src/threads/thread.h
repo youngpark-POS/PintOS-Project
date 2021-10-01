@@ -97,13 +97,14 @@ struct thread
     struct list_elem giver_elem;        /* Iterator for giver list. */
     struct lock *waiting_lock;          /* Wait on lock. */
 
-    int nice;                           /* Niceness. */
-    int recent_cpu;                     /* Recent cpu. */
-
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+
+    int64_t wakeuptime;
+    int recentcpu;
+    int nice;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -152,5 +153,14 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+void mlfqscalpriority(struct thread *);
+void mlfqscalrecentcpu(struct thread *);
+void mlfqscalloadavg();
+
+void mlfqsincreasrecentcpu(void);
+void mlfqsrecal(void);
+void mlfqsrecalpriority(void);
+void mlfqsrecalrecentcpu(void);
 
 #endif /* threads/thread.h */

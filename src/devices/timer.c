@@ -23,6 +23,7 @@ static int64_t ticks;
 /* Number of loops per timer tick.
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
+extern struct list alarmlist; // blocked thread list
 
 static intr_handler_func timer_interrupt;
 static bool too_many_loops (unsigned loops);
@@ -86,14 +87,34 @@ timer_elapsed (int64_t then)
 
 /* Sleeps for approximately TICKS timer ticks.  Interrupts must
    be turned on. */
+
+bool
+compare_tick (const struct list_elem* a, const struct list_elem* b, void *aux UNUSED)
+{
+  struct thread *thread_a = list_entry (a, struct thread, elem);
+  struct thread* thread_b = list_entry (b, struct thread, elem);
+  return thread_a->wakeuptime < thread_b->wakeuptime;
+}
+  
 void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  enum intr_level old_level = intr_disable();
+  timer_newsleep(ticks + start);
+  intr_set_level (old_level);
+}
+
+void
+timer_newsleep (int64_t waketime)
+{
+  struct thread *cur_thread;
+  cur_thread = thread_current();
+  cur_thread->wakeuptime = waketime;
+  list_insert_ordered (&alarmlist, &cur_thread->elem, compare_tick, NULL);
+  thread_block();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -170,8 +191,29 @@ timer_print_stats (void)
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
+  struct thread *t;
   ticks++;
   thread_tick ();
+  if (thread_mlfqs)
+  {
+    mlfqsincreasrecentcpu();
+    if (ticks % 100 == 0)
+    {
+      mlfqsrecal();
+    }
+    else if (ticks % 4 == 0)
+      mlfqsrecalpriority();
+  }
+  while(!list_empty(&alarmlist))
+  {
+    if (list_entry(list_front(&alarmlist), struct thread, elem)->wakeuptime <= ticks)
+    {
+      t = list_entry(list_front(&alarmlist), struct thread, elem);
+      list_pop_front(&alarmlist);
+      thread_unblock(t);
+    }
+    else break;
+  }
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
