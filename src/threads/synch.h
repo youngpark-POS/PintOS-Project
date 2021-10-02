@@ -16,6 +16,8 @@ void sema_down (struct semaphore *);
 bool sema_try_down (struct semaphore *);
 void sema_up (struct semaphore *);
 void sema_self_test (void);
+
+// Semaphore compare function. return sema_a's highest priority > sema_b's highest priority.
 bool semaphore_compare_priority (const struct list_elem *, const struct list_elem *, void *);
 
 /* Lock. */
@@ -30,8 +32,6 @@ void lock_acquire (struct lock *);
 bool lock_try_acquire (struct lock *);
 void lock_release (struct lock *);
 bool lock_held_by_current_thread (const struct lock *);
-
-// void priority_donate (struct thread*);
 
 
 /* Condition variable. */
