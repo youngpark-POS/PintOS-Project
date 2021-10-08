@@ -388,8 +388,9 @@ void
 thread_set_nice (int nice UNUSED) 
 {
   intr_disable();
-  thread_current()->nice = nice;
-  mlfqscalpriority(thread_current());
+  struct thread* t = thread_current();
+  t->nice = nice;
+  if(t != idle_thread) mlfqscalpriority(t);
   thread_yield();
   intr_enable();
 }
@@ -400,7 +401,8 @@ thread_get_nice (void)
 {
   intr_disable();
   int nice;
-  nice = thread_current()->nice;
+  struct thread* t = thread_current();
+  nice = t->nice;
   intr_enable();
   return nice;
 }
@@ -422,7 +424,8 @@ thread_get_recent_cpu (void)
 {
   intr_disable();
   int rc;
-  rc = fptointround(mulfpn(thread_current()->recentcpu, 100));
+  struct thread* t = thread_current();
+  rc = fptointround(mulfpn(t->recentcpu, 100));
   intr_enable();
   return rc;
 }
@@ -430,25 +433,22 @@ thread_get_recent_cpu (void)
 void mlfqscalpriority(struct thread *t)
 {
   int temp;
-  if (t != idle_thread)
+
+  temp = PRI_MAX - 2*(t->nice);
+  t->priority = fptoint(addfpn(divfpn(t->recentcpu, -4), temp));
+  if (t->priority > 63)
   {
-    temp = PRI_MAX - 2*(t->nice);
-    t->priority = fptoint(addfpn(divfpn(t->recentcpu, -4), temp));
-    if (t->priority > 63)
-    {
-      t->priority = 63;
-      return;
-    }
-    else if(t->priority < 0)
-    {
-      t->priority = 0;
-      return;
-    }
-    else return;
+    t->priority = 63;
+    return;
+  }
+  else if(t->priority < 0)
+  {
+    t->priority = 0;
+    return;
   }
   else return;
 }
-
+/* 
 void mlfqscalrecentcpu(struct thread* t)
 {
   if (t != idle_thread)
@@ -459,6 +459,7 @@ void mlfqscalrecentcpu(struct thread* t)
   }
   else return;
 }
+*/
 
 void mlfqscalloadavg(void)
 {
@@ -492,6 +493,7 @@ void mlfqsrecalpriority(void)
   for(ele=list_begin(&all_list);ele!=list_end(&all_list);ele=list_next(ele))
   {
     t = list_entry(ele, struct thread, allelem);
+    if(t == idle_thread) continue;
     mlfqscalpriority(t);
   }
   return;
@@ -504,7 +506,12 @@ void mlfqsrecalrecentcpu(void)
   for(ele=list_begin(&all_list);ele!=list_end(&all_list);ele=list_next(ele))
   {
     t = list_entry(ele, struct thread, allelem);
-    mlfqscalrecentcpu(t);
+    if (t == idle_thread) continue;
+    else
+    {
+      t->recentcpu = addfpn(fpmul(fpdiv(mulfpn(load_avg, 2),
+                            addfpn(mulfpn(load_avg, 2), 1)), t->recentcpu), t->nice);
+    }
   }
   return;
 }
